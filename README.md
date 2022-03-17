@@ -12,8 +12,53 @@ iPET has three components:
 3) **ipet-pert-add**: A sample gateway simulator that receives packets from a device and adds cover traffic as instructed by the perturbation vector.
 
 ## Data required
+Network traces are required to train the iPet generators.
+
+`pcap` packet capture files must be used to generate corresponding `csv` files that contain the specific fields (stated below). They must be placed in the `ipet_pert_train/IoT_Traces` directory. Note that the rows in the `csv` file correspond to packet metadata for a single device communicating with one or more servers on the internet. If the `pcap` file contains traffic from multiple devices, it must must be decomposed for each device into separate `csv` files. The file may follow a naming convention `[device_name].csv`.
+
+The reqiured fields are:
+ - `frame.number`	
+ - `frame.time_relative`	
+ - `ip.src`	
+ - `ip.dst`	
+ - `ip.proto`	
+ - `tcp.len`	
+ - `tcp.stream`	
+ - `udp.length`	
+ - `eth.src`	
+ - `eth.dst`	
+ - `transport.len`
+
+A sample of the network traces in the expected format has been shared as a tarball in the releases tab.
+
 ## Running
 ### Training Generators
+
+#### Configuration
+To allow a user to customise their iPet instance, we expect them to specify the following variables in `constants.py`:
+- `total_time`: The total observation time for the time series, in seconds.
+- `omega` : The duration of a discrete time-slot in the time series, in seconds.
+- `device_name` : Name list of the devices in the network. For e.g. `['device_A','device_B,'device_C']`
+- `max_packets_per_omega` : Maximum number of dummy packets allowed to be added in a discrete time-slot 
+- `max_payload_per_omega` : Maximum additional payload bytes to be added in a discrete time-slot
+- `training_stages` : Number of stages you want to train iPet for
+
+#### Generating Fetaure Vectors
+The raw data is converted to numpy feature vectors for the model to training on by running the script:
+```sh
+$ cd ipet_pert_train
+$ python feature_generatiom.py 
+```
+#### Training Basic Discriminator
+We first need to train the Discriminator model that would be used by the iPET model to train the generators, using the following script: 
+```sh
+$ python train_D0.py 
+```
+#### Training iPET generators
+Finally, the iPET generators can be trained using the following script: 
+```sh
+$ python iPet_Training.py 
+```
 
 ### Producing Perturbations
 The trained models will be saved on the disk for each a) device, b) generator version and c) chain. The `predict.py` script loads the saved models for the specific combination of parameters requested by the user.  
